@@ -71,4 +71,48 @@ router.put('/:hootId', verifyToken, async (req, res) => {
 });
 
 // DELETE /hoots/:hootId DELETE Route "Protected"
+router.delete('/:hootId', verifyToken, async (req, res) => {
+  try {
+    const hoot = await Hoot.findById(req.params.hootId);
+
+    if (!hoot.author.equals(req.user._id)) {
+      return res.status(403).send('You\'re not allowed to do that');
+    }
+
+    const deletedHoot = await Hoot.findByIdAndDelete(req.params.hootId);
+    res.status(200).json(deletedHoot);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /hoots/:hootId/comments CREATE comment "Protected"
+router.post('/:hootId/comments', verifyToken, async (req, res) => {
+  try {
+    req.body.author = req.user._id; // adding requesting user as author
+    const hoot = await Hoot.findById(req.params.hootId);
+    hoot.comments.push(req.body);
+    await hoot.save();
+
+    const newComment = hoot.comments[hoot.comments.length - 1]; // get most recent comment
+    newComment._doc.author = req.user;  // add requesting user's details
+    res.status(201).json(newComment);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
 module.exports = router;
